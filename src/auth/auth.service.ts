@@ -1,9 +1,10 @@
 import { PrismaService } from "src/prisma.service";
-import { BadRequestException, Injectable, UnauthorizedException } from "@nestjs/common";
+import { BadRequestException, Injectable, InternalServerErrorException, UnauthorizedException } from "@nestjs/common";
 import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
 import { SignupDto } from './dtos/signup.dto';
 import { LoginDto } from './dtos/login.dto';
+import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
 
 @Injectable()
 export class AuthService{
@@ -17,14 +18,20 @@ export class AuthService{
     async signup(signupData: SignupDto) {
         const { email, password, name } = signupData;
         console.log('****** SignUp Starting ******');
-        // Email Check
-        const currEmail = await this.prisma.user.findUnique({
-            where: { email: String(email) },
-        });
-    
-        if (currEmail) {
-            throw new BadRequestException('Email already exists!');
+        
+        if (!name || name.trim() === '') {
+            throw new BadRequestException('Name cannot be empty.');
         }
+
+        // Email Check
+        // const currEmail = await this.prisma.user.findUnique({
+        //     where: { email: String(email) },
+        // });
+         // Validate input
+        
+        // if (currEmail) {
+        //     throw new BadRequestException('Email already exists!');
+        // }
     
         // Password
         const hashedPassword = await bcrypt.hash(password, 10);
@@ -40,7 +47,17 @@ export class AuthService{
             });
             return create;
         } catch (error) {
-            throw error;
+            console.log(error);
+            if(error instanceof PrismaClientKnownRequestError){
+                switch(error.code){
+                    case 'P2002':
+                        throw new BadRequestException('Email Already Exsists.');
+                    default:
+                        throw new InternalServerErrorException('An unexpected error occurred.');    
+                }
+            }
+            // Handle unexpected errors
+            throw new InternalServerErrorException('Error while creating user.');
         }
     }
     
