@@ -1,6 +1,5 @@
 import { Body, Controller, Get, Post, Req, Res } from "@nestjs/common";
 import { AuthService } from "./auth.service";
-import { Request,Response } from "express";
 import { SignupDto } from './dtos/signup.dto';
 import { LoginDto } from './dtos/login.dto';
 
@@ -10,32 +9,17 @@ export class AuthController{
     constructor(private readonly authService:AuthService){}
 
     @Get()
-    async getAllUser (@Req() request:Request,@Res() response:Response):Promise<any>{
-        const result = await this.authService.fetchAllUser();
-        return response.status(200).json({
-            status:'OK',
-            message:'Success!',
-            result:result,
-        });
+    async getAllUser ():Promise<any>{
+        return await this.authService.fetchAllUser();
     }
 
     @Post('/signup')
-    async signup (@Req() request:Request,@Res() response:Response,@Body() signupData:SignupDto):Promise<any>{
-        const result = await this.authService.signup(signupData);
-        return response.status(200).json({
-            status:'OK',
-            message:'Created User Successfully!',
-            result:result,
-        });
+    async signup (@Body() signupData:SignupDto):Promise<any>{
+        return await this.authService.signup(signupData);
     }
     
     @Post('/login')
-    async login (@Req() request:Request,@Res() response:Response,@Body() userData:LoginDto):Promise<any>{
-        const result = await this.authService.login(userData);
-        return response.status(200).json({
-            status:'OK',
-            message:'Login was Successful!',
-            result:result,
-        });
+    async login (@Body() userData:LoginDto):Promise<any>{
+        return await this.authService.login(userData);
     }
 }

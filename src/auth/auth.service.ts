@@ -19,21 +19,6 @@ export class AuthService{
         const { email, password, name } = signupData;
         console.log('****** SignUp Starting ******');
         
-        if (!name || name.trim() === '') {
-            throw new BadRequestException('Name cannot be empty.');
-        }
-
-        // Email Check
-        // const currEmail = await this.prisma.user.findUnique({
-        //     where: { email: String(email) },
-        // });
-         // Validate input
-        
-        // if (currEmail) {
-        //     throw new BadRequestException('Email already exists!');
-        // }
-    
-        // Password
         const hashedPassword = await bcrypt.hash(password, 10);
     
         // Create
@@ -45,7 +30,7 @@ export class AuthService{
                     password: hashedPassword
                 }
             });
-            return create;
+            return { message: 'Created User successful!',result:create};
         } catch (error) {
             console.log(error);
             if(error instanceof PrismaClientKnownRequestError){
@@ -69,7 +54,7 @@ export class AuthService{
         
         // Email Check
         const user = await this.prisma.user.findUnique({
-            where: { email: String(email) },
+            where: { email: email },
         });
         if (!user) {
             throw new UnauthorizedException('Wrong Credentials!');
