@@ -1,14 +1,17 @@
 import { PrismaService } from "src/prisma.service";
-import { BadRequestException, Injectable, InternalServerErrorException, UnauthorizedException } from "@nestjs/common";
+import { BadRequestException, Injectable, InternalServerErrorException, NotFoundException, UnauthorizedException } from "@nestjs/common";
 import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
 import { SignupDto } from './dtos/signup.dto';
 import { LoginDto } from './dtos/login.dto';
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
+import * as crypto from 'crypto';
+import { MailerService } from '../mailer/mailer.service';
 
 @Injectable()
 export class AuthService{
-    constructor(private prisma:PrismaService,private jwtService:JwtService){}
+    
+    constructor(private prisma:PrismaService,private jwtService:JwtService,private mailerService: MailerService,  ){}
     
     // Create
     async fetchAllUser() {
@@ -78,4 +81,104 @@ export class AuthService{
             accessToken,
         };
     }
+
+    async generateVerificationOtp(userId: number) {
+        // Fetch the user
+        const user = await this.prisma.user.findUnique({
+            where: { id: +userId },
+            select: { email: true, id: true },
+        });
+    
+        if (!user || !user.email) {
+            throw new NotFoundException('User not found or email is missing.');
+        }
+    
+        // Check for an existing OTP that is still valid
+        const existingOtp = await this.prisma.verificationOtp.findFirst({
+            where: {
+                userId: user.id,
+                expiresAt: { gte: new Date() }, // Check if OTP is not expired
+            },
+        });
+    
+        if (existingOtp) {
+            throw new BadRequestException('An active OTP already exists. Please wait until it expires.');
+        }
+    
+        // Generate a new OTP
+        const otpSimple = crypto.randomInt(100000, 999999).toString();
+        const otpHash = await bcrypt.hash(otpSimple, 10); // Hash the OTP
+        const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // OTP expires in 5 minutes
+    
+        // Save the OTP to the database
+        try {
+            await this.prisma.verificationOtp.create({
+                data: {
+                    otp: otpHash,
+                    expiresAt,
+                    email: user.email,
+                    userId: user.id,
+                },
+            });
+        } catch (error) {
+            throw new InternalServerErrorException('Error saving OTP to the database.');
+        }
+    
+        // Send OTP via email
+        await this.mailerService.sendMail(
+            user.email,
+            'Your OTP for Email Verification',
+            `Your OTP is: ${otpSimple}. It will expire in 5 minutes.`,
+            `<p>Your OTP is <strong>${otpSimple}</strong>. It will expire in 5 minutes.</p>`
+        );
+    
+        return { message: 'OTP sent successfully', email: user.email };
+    }
+    
+    async verifyOtp(userId: number, otp: string): Promise<boolean> {
+        // Fetch the OTP record for the user
+        const verificationOtp = await this.prisma.verificationOtp.findFirst({
+            where: {
+                userId: +userId,
+                expiresAt: { gte: new Date() }, // Ensure OTP is not expired
+            },
+        });
+    
+        if (!verificationOtp) {
+            throw new BadRequestException('Invalid or expired OTP.');
+        }
+    
+        // Compare the provided OTP with the hashed OTP in the database
+        const isOtpValid = await bcrypt.compare(otp, verificationOtp.otp);
+    
+        if (!isOtpValid) {
+            throw new BadRequestException('Invalid OTP.');
+        }
+    
+        // Delete the OTP after successful verification
+        try {
+            await this.prisma.verificationOtp.delete({
+                where: { id: verificationOtp.id },
+            });
+            return true; // OTP verification was successful, and the record was deleted
+        } catch (error) {
+            throw new InternalServerErrorException('Error deleting OTP record after verification.');
+        }
+    }
+    
+
+    async deleteExpiredOtps(): Promise<{ count: number }> {
+        try {
+            const result = await this.prisma.verificationOtp.deleteMany({
+                where: {
+                    expiresAt: { lt: new Date() }, // Delete OTPs where the expiry date is less than the current date
+                },
+            });
+    
+            return { count: result.count }; // Correctly return the count property
+        } catch (error) {
+            throw new InternalServerErrorException('Error deleting expired OTPs from the database.');
+        }
+    }    
+    
 }

@@ -5,9 +5,11 @@ import { AuthController } from "./auth.controller";
 import { ConfigModule, ConfigService } from "@nestjs/config";
 import { JwtModule } from '@nestjs/jwt';
 import config from '../config/config';
+import { MailerModule } from "src/mailer/mailer.module";
+import { MailerService } from "src/mailer/mailer.service";
 @Module({
     controllers:[AuthController],
-    providers:[AuthService,PrismaService],
+    providers:[AuthService,PrismaService,MailerService],
     imports:[
         ConfigModule.forRoot({
             isGlobal:true,
@@ -22,7 +24,7 @@ import config from '../config/config';
             global:true,
             inject:[ConfigService]
           }),
-          
+          MailerModule,
     ],
 })
 export class AuthModule{}

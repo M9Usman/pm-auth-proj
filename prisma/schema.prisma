@@ -13,9 +13,26 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model User{
-  id Int @id @default(autoincrement())
-  name String
-  email String @unique
-  password String
+model User {
+  id                Int               @id @default(autoincrement())
+  name              String
+  email             String            @unique
+  password          String
+  verificationOtps  VerificationOtp[] // Add this line to define the reverse relation
+
+}
+
+model VerificationOtp {
+  id         Int      @id @default(autoincrement())
+  otp        String
+  expiresAt  DateTime
+  used       Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  email      String
+  userId     Int      // Foreign key to User model
+  user       User     @relation(fields: [userId], references: [id])
+
+  @@index([email], name: "email_idx")
+  @@unique([otp, userId])  // Ensure OTP is unique for a user
 }
