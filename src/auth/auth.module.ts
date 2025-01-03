@@ -7,24 +7,12 @@ import { JwtModule } from '@nestjs/jwt';
 import config from '../config/config';
 import { MailerModule } from "src/mailer/mailer.module";
 import { MailerService } from "src/mailer/mailer.service";
+import { AuthGuard } from "src/guards/auth.guard";
 @Module({
     controllers:[AuthController],
-    providers:[AuthService,PrismaService,MailerService],
+    providers:[AuthService,PrismaService,MailerService,AuthGuard],
     imports:[
-        ConfigModule.forRoot({
-            isGlobal:true,
-            cache:true,
-            load:[config],
-        }),
-        JwtModule.registerAsync({
-            imports:[ConfigModule],
-            useFactory:async(config)=>({
-              secret:config.get('jwt.secret'),
-            }),
-            global:true,
-            inject:[ConfigService]
-          }),
-          MailerModule,
+        MailerModule
     ],
 })
 export class AuthModule{}

@@ -181,4 +181,38 @@ export class AuthService{
         }
     }    
     
+    async changePassword(userId:number,oldPassword:string,newPassword:string){
+        // Find User
+        const user = await this.prisma.user.findUnique({
+            where:{id:+userId}
+        });
+        if(!user){
+            throw new NotFoundException('User not Found... !');
+        }
+        // Compare old password with the password in DB
+        const passwordMatch = await bcrypt.compare(oldPassword,user.password);
+        if(!passwordMatch){
+            throw new UnauthorizedException('Wrong credentials!');
+        } 
+
+        // Change user's password ( AFTER HASING)
+        const newHashedPassword = await bcrypt.hash(newPassword,10);
+        try{
+            const result=  await this.prisma.user.update({
+                where: {
+                    id: userId, // Replace `userId` with the actual user identifier
+                },
+                data: {
+                    password: newHashedPassword,
+                },
+            });
+            return {
+                message:'User Password Changed!',
+                result:result,
+            };
+        }catch(error){
+            throw new InternalServerErrorException('Something goes wrong!');
+        } 
+        
+    }
 }

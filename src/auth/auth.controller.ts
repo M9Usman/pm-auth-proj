@@ -1,10 +1,12 @@
-import { Body, Controller, Get, Param, Post, Req, Res } from "@nestjs/common";
+import { Body, Controller, Get, Param, Post, Put, Req, Res, UseGuards } from "@nestjs/common";
 import { AuthService } from "./auth.service";
 import { SignupDto } from './dtos/signup.dto';
 import { LoginDto } from './dtos/login.dto';
 import { VerificationOTPDto } from './dtos/verificationOTP.dto';
 import { OtpDto } from "./dtos/otp.dto";
 import { Cron } from "@nestjs/schedule";
+import { ChangePasswordDto } from "./dtos/changePassword.dto";
+import { AuthGuard } from "src/guards/auth.guard";
 
 
 @Controller('/auth')
@@ -45,6 +47,16 @@ export class AuthController{
     async cleanupExpiredOtps() {
         const { count } = await this.authService.deleteExpiredOtps();
         console.log(`Cleaned up ${count} expired OTPs.`);
+    }
+
+    @UseGuards(AuthGuard)
+    @Put('change-password')
+    async changePassword(@Body() changePasswordDto: ChangePasswordDto, @Req() req:any){
+        return this.authService.changePassword(
+            req.userId,
+            changePasswordDto.oldPassword,
+            changePasswordDto.newPassword
+        ); 
     }
 
 }
