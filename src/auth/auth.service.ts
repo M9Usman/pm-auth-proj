@@ -7,6 +7,8 @@ import { LoginDto } from './dtos/login.dto';
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
 import * as crypto from 'crypto';
 import { MailerService } from '../mailer/mailer.service';
+import { ForgotPasswordDto } from "./dtos/forgotPassword.dto";
+import { nanoid } from "nanoid";
 
 @Injectable()
 export class AuthService{
@@ -215,4 +217,63 @@ export class AuthService{
         } 
         
     }
+
+    async forgotPassword(email:string){
+        
+        const user = await this.prisma.user.findUnique({
+            where: { email: email },
+        });
+
+        if(user){
+            const expiryDate = new Date();
+            expiryDate.setHours(expiryDate.getHours()+1);
+            
+            const resetToken  = nanoid(64);
+            const resetTokenDB = await this.prisma.resetPassword.create({
+                data:{
+                    userId:+user.id,
+                    token:resetToken,
+                    expiresAt:expiryDate,
+                }
+            });
+            this.mailerService.sendPasswordResetlink(email,resetToken);
+        }
+
+        return {message:'Email Sent! Please Check Your Email.'};
+    }
+
+    async resetPassword(newPassword: string, token: string) { 
+        try {
+            const tokenStatus = await this.prisma.resetPassword.findUnique({
+                where: { token: token },
+            });
+        
+            if (!tokenStatus) {
+                throw new NotFoundException("Invalid token.");
+            }
+        
+            const currentTime = new Date();
+            if (tokenStatus.expiresAt < currentTime) {
+                throw new UnauthorizedException("Token has expired.");
+            }
+        
+            const hashedPassword = await bcrypt.hash(newPassword, 10);
+        
+            await this.prisma.user.update({
+                where: { id: tokenStatus.userId },
+                data: { password: hashedPassword }, 
+            });
+        
+            await this.prisma.resetPassword.delete({
+                where: { token: token },
+            });
+        
+            return { message: "Password reset successful." };
+        } catch (error) {
+            console.error(error);
+            throw new InternalServerErrorException("An error occurred while resetting the password.");
+        }
+    }
+    
+    
 }

@@ -19,7 +19,7 @@ model User {
   email             String            @unique
   password          String
   verificationOtps  VerificationOtp[] // Add this line to define the reverse relation
-
+  resetPassword  ResetPassword[] // Add this line to define the reverse relation
 }
 
 model VerificationOtp {
@@ -35,4 +35,12 @@ model VerificationOtp {
 
   @@index([email], name: "email_idx")
   @@unique([otp, userId])  // Ensure OTP is unique for a user
+}
+
+model ResetPassword {
+  id        Int      @id @default(autoincrement())
+  token     String   @unique // Ensure tokens are unique
+  expiresAt DateTime
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
 }

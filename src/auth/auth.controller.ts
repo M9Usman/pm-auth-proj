@@ -7,6 +7,8 @@ import { OtpDto } from "./dtos/otp.dto";
 import { Cron } from "@nestjs/schedule";
 import { ChangePasswordDto } from "./dtos/changePassword.dto";
 import { AuthGuard } from "src/guards/auth.guard";
+import { ForgotPasswordDto } from "./dtos/forgotPassword.dto";
+import { ResetPasswordDto } from "./dtos/resetPassword.dto";
 
 
 @Controller('/auth')
@@ -43,11 +45,6 @@ export class AuthController{
         
     }
 
-    @Cron('0 * * * *') // Run every hour
-    async cleanupExpiredOtps() {
-        const { count } = await this.authService.deleteExpiredOtps();
-        console.log(`Cleaned up ${count} expired OTPs.`);
-    }
 
     @UseGuards(AuthGuard)
     @Put('change-password')
@@ -59,4 +56,19 @@ export class AuthController{
         ); 
     }
 
+    @Post('forgot-password')
+    async forgotPassword(@Body() forgotPasswordDto:ForgotPasswordDto){
+        return this.authService.forgotPassword(forgotPasswordDto.email);
+    }
+
+    @Put('reset-password')
+    async resetPassword(@Body() restPasswordDto:ResetPasswordDto){
+        return this.authService.resetPassword(restPasswordDto.newPassword,restPasswordDto.token);
+    }
+
+    @Cron('0 * * * *') // Run every hour
+    async cleanupExpiredOtps() {
+        const { count } = await this.authService.deleteExpiredOtps();
+        console.log(`Cleaned up ${count} expired OTPs.`);
+    }
 }
