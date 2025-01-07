@@ -1,11 +1,11 @@
-import { Injectable, NestMiddleware } from "@nestjs/common";
-import { NextFunction, Request, Response } from "express";
-import * as jwt from "jsonwebtoken";
+import { Injectable, NestMiddleware } from '@nestjs/common';
+import { NextFunction, Request, Response } from 'express';
+import { match } from 'path-to-regexp';
+import * as jwt from 'jsonwebtoken';
 
 @Injectable()
 export class AuthMiddleware implements NestMiddleware {
   use(req: Request, res: Response, next: NextFunction) {
-    // Define excluded routes
     const excludedPaths = [
       '/auth/signup',
       '/auth/login',
@@ -17,8 +17,13 @@ export class AuthMiddleware implements NestMiddleware {
     ];
 
     // Check if the current path matches any excluded path
-    if (excludedPaths.includes(req.path)) {
-      return next(); // Skip authentication for excluded routes
+    const isExcluded = excludedPaths.some((pathPattern) => {
+      const matcher = match(pathPattern, { decode: decodeURIComponent });
+      return matcher(req.path);
+    });
+
+    if (isExcluded) {
+      return next(); // Skip middleware logic for excluded routes
     }
 
     const token = req.headers.authorization?.split(' ')[1];
