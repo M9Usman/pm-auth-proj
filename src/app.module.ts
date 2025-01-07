@@ -7,6 +7,7 @@ import { MailerModule } from './mailer/mailer.module';
 import config from './config/config';
 import { JwtModule } from '@nestjs/jwt';
 import { AuthMiddleware } from './common/middlewares/auth.middleware';
+import { PrismaService } from './prisma.service';
 
 @Module({
   imports: [
@@ -27,7 +28,7 @@ import { AuthMiddleware } from './common/middlewares/auth.middleware';
       }),
     ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [AppService,PrismaService],
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
