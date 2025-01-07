@@ -30,13 +30,6 @@ export class AuthController{
         return await this.authService.login(userData);
     }
 
-    // @NoAccountGuard  - when i will create one. 
-    @Post('/verificationotp/:id')
-    async generateEmailVerification(@Param() params: VerificationOTPDto) {
-        const { id } = params;
-        return await this.authService.generateVerificationOtp(id);
-    }
-
     @Post('/verifyOTP/:id')
     async verifyOTP(@Param() params:VerificationOTPDto,@Body() otp_message:OtpDto){
         const {id} = params;

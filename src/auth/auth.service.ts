@@ -13,7 +13,7 @@ import { nanoid } from "nanoid";
 @Injectable()
 export class AuthService{
     
-    constructor(private prisma:PrismaService,private jwtService:JwtService,private mailerService: MailerService,  ){}
+    constructor(private prisma:PrismaService,private jwtService:JwtService,private mailerService: MailerService){}
     
     // Create
     async fetchAllUser() {
@@ -23,56 +23,64 @@ export class AuthService{
     async signup(signupData: SignupDto) {
         const { email, password, name } = signupData;
         console.log('****** SignUp Starting ******');
-        
+    
         const hashedPassword = await bcrypt.hash(password, 10);
     
-        // Create
+        // Create the user with verified set to false
         try {
-            const create = await this.prisma.user.create({
+            const user = await this.prisma.user.create({
                 data: {
-                    name: name,
-                    email: email,
-                    password: hashedPassword
-                }
+                    name,
+                    email,
+                    password: hashedPassword,
+                    verified: false,
+                },
             });
-            return { message: 'Created User successful!',result:create};
+    
+            // Generate OTP
+            await this.generateVerificationOtp(user.id);
+    
+            return {
+                message: 'User created successfully. Please verify your email. Check email for OTP Verification!',
+                userId: user.id,
+            };
         } catch (error) {
-            console.log(error);
-            if(error instanceof PrismaClientKnownRequestError){
-                switch(error.code){
-                    case 'P2002':
-                        throw new BadRequestException('Email Already Exsists.');
-                    default:
-                        throw new InternalServerErrorException('An unexpected error occurred.');    
-                }
+            if (error instanceof PrismaClientKnownRequestError && error.code === 'P2002') {
+                throw new BadRequestException('Email already exists.');
             }
-            // Handle unexpected errors
-            throw new InternalServerErrorException('Error while creating user.');
+            throw new InternalServerErrorException('Error during signup.');
         }
     }
     
     
-    // Read
     async login(loginData: LoginDto) {
         const { email, password } = loginData;
-        console.log('****** Login Starting ******');
-        
-        // Email Check
+    
         const user = await this.prisma.user.findUnique({
-            where: { email: email },
+            where: { email },
         });
+    
         if (!user) {
-            throw new UnauthorizedException('Wrong Credentials!');
+            throw new UnauthorizedException('Wrong credentials!');
         }
     
-        // Password Check
+        if (!user.verified) {
+            throw new UnauthorizedException('Account not verified. Please verify your email.');
+        }
+    
         const passwordMatch = await bcrypt.compare(password, user.password);
         if (!passwordMatch) {
-            throw new UnauthorizedException('Wrong Credentials!');
+            throw new UnauthorizedException('Wrong credentials!');
         }
     
-        return { message: 'Login successful', userId: user.id,token: await this.generateUserTokens(user.id) }; // You can return more data as needed
+        return {
+            message: 'Login successful',
+            userId: user.id,
+            token: await this.generateUserTokens(user.id),
+        };
     }
+    
+    
     
 
     async generateUserTokens(userId){
@@ -157,6 +165,17 @@ export class AuthService{
             throw new BadRequestException('Invalid OTP.');
         }
     
+        try{
+                    // Mark user as verified
+                    await this.prisma.user.update({
+                        where: { id: +userId },
+                        data: { verified: true },
+                    });
+
+        }catch(e){
+            console.log('Error in User Update Verification : ',e);
+            throw new InternalServerErrorException('Error while updating user status.');
+        }
         // Delete the OTP after successful verification
         try {
             await this.prisma.verificationOtp.delete({
