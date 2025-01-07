@@ -9,7 +9,7 @@ export class AuthMiddleware implements NestMiddleware {
     const excludedPaths = [
       '/auth/signup',
       '/auth/login',
-      '/auth/forget-password',
+      '/auth/forgot-password',
       '/auth/reset-password',
       '/auth/resend-otp/:id',
       '/auth/verify-otp/:id',
