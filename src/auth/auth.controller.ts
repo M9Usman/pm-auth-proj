@@ -9,6 +9,7 @@ import { ChangePasswordDto } from "./dtos/changePassword.dto";
 import { AuthGuard } from "src/guards/auth.guard";
 import { ForgotPasswordDto } from "./dtos/forgotPassword.dto";
 import { ResetPasswordDto } from "./dtos/resetPassword.dto";
+import { Request } from "express";
 
 
 @Controller('/auth')
@@ -38,6 +39,10 @@ export class AuthController{
         
     }
 
+    @Post('resend-otp/:userId')
+    async resendOtp(@Param('userId') userId: number) {
+        return this.authService.resendOtp(userId);
+    }
 
     @UseGuards(AuthGuard)
     @Put('change-password')
@@ -63,5 +68,14 @@ export class AuthController{
     async cleanupExpiredOtps() {
         const { count } = await this.authService.deleteExpiredOtps();
         console.log(`Cleaned up ${count} expired OTPs.`);
+    }
+
+    @Get('authHome')
+    async authHome(@Req() req:Request){
+        const user = req.user;
+        return {
+            message:'Welcome Home to Check MiddleWare!',
+            data:user,
+        };
     }
 }

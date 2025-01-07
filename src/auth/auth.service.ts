@@ -202,6 +202,65 @@ export class AuthService{
         }
     }    
     
+    async resendOtp(userId: number) {
+        const user = await this.prisma.user.findUnique({
+            where: { id: +userId },
+            select: { email: true, id: true },
+        });
+    
+        if (!user || !user.email) {
+            throw new NotFoundException('User not found or email is missing.');
+        }
+        
+        const existingOtp = await this.prisma.verificationOtp.findFirst({
+            where: {
+                userId: user.id,
+                expiresAt: { gte: new Date() }, // Check if OTP is still valid
+            },
+        });
+    
+        if (existingOtp) {
+            // Delete the existing OTP before sending a new one
+            try {
+                await this.prisma.verificationOtp.delete({
+                    where: { id: existingOtp.id },
+                });
+            } catch (error) {
+                throw new InternalServerErrorException('Error deleting the existing OTP.');
+            }
+        }
+    
+        // Generate a new OTP
+        const otpSimple = crypto.randomInt(100000, 999999).toString();
+        const otpHash = await bcrypt.hash(otpSimple, 10); // Hash the OTP
+        const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // OTP expires in 5 minutes
+    
+        // Save the new OTP to the database
+        try {
+            await this.prisma.verificationOtp.create({
+                data: {
+                    otp: otpHash,
+                    expiresAt,
+                    email: user.email,
+                    userId: user.id,
+                },
+            });
+        } catch (error) {
+            throw new InternalServerErrorException('Error saving OTP to the database.');
+        }
+    
+        // Send OTP via email
+        await this.mailerService.sendMail(
+            user.email,
+            'Your OTP for Email Verification',
+            `Your OTP is: ${otpSimple}. It will expire in 5 minutes.`,
+            `<p>Your OTP is <strong>${otpSimple}</strong>. It will expire in 5 minutes.</p>`
+        );
+    
+        return { message: 'OTP sent successfully', email: user.email };
+    }
+    
+
     async changePassword(userId:number,oldPassword:string,newPassword:string){
         // Find User
         const user = await this.prisma.user.findUnique({

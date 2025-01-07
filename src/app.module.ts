@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { MiddlewareConsumer, Module, NestModule, RequestMethod } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
@@ -6,6 +6,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MailerModule } from './mailer/mailer.module';
 import config from './config/config';
 import { JwtModule } from '@nestjs/jwt';
+import { AuthMiddleware } from './common/middlewares/auth.middleware';
 
 @Module({
   imports: [
@@ -28,4 +29,18 @@ import { JwtModule } from '@nestjs/jwt';
   controllers: [AppController],
   providers: [AppService],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer.apply(AuthMiddleware)
+    .exclude(
+        { path: 'auth/signup', method: RequestMethod.POST },
+        { path: 'auth/login', method: RequestMethod.POST },
+        { path: 'auth/forget-password', method: RequestMethod.POST },
+        { path: 'auth/reset-password', method: RequestMethod.PATCH },
+        { path: 'auth/resend-otp', method: RequestMethod.POST },
+        { path: 'auth/verify-otp', method: RequestMethod.PATCH },
+    )
+    .forRoutes({path: '*',method:RequestMethod.ALL});
+  }
+  
+}
