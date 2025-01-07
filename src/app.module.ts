@@ -8,6 +8,7 @@ import config from './config/config';
 import { JwtModule } from '@nestjs/jwt';
 import { AuthMiddleware } from './common/middlewares/auth.middleware';
 import { PrismaService } from './prisma.service';
+import { AuthGuard } from './auth/guards/auth.guard';
 
 @Module({
   imports: [
@@ -28,7 +29,7 @@ import { PrismaService } from './prisma.service';
       }),
     ],
   controllers: [AppController],
-  providers: [AppService,PrismaService],
+  providers: [AppService,PrismaService,AuthGuard],
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
