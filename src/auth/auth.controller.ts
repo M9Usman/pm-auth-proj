@@ -6,7 +6,7 @@ import { VerificationOTPDto } from './dtos/verificationOTP.dto';
 import { OtpDto } from "./dtos/otp.dto";
 import { Cron } from "@nestjs/schedule";
 import { ChangePasswordDto } from "./dtos/changePassword.dto";
-import { AuthGuard } from "src/guards/auth.guard";
+import { AuthGuard } from "src/auth/guards/auth.guard";
 import { ForgotPasswordDto } from "./dtos/forgotPassword.dto";
 import { ResetPasswordDto } from "./dtos/resetPassword.dto";
 import { Request } from "express";
