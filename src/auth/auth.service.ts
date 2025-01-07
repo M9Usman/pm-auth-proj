@@ -41,7 +41,6 @@ export class AuthService{
     
             return {
                 message: 'User created successfully. Please verify your email. Check email for OTP Verification!',
-                userId: user.id,
             };
         } catch (error) {
             console.log(error);
