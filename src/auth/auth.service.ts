@@ -7,7 +7,6 @@ import { LoginDto } from './dtos/login.dto';
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
 import * as crypto from 'crypto';
 import { MailerService } from '../mailer/mailer.service';
-import { ForgotPasswordDto } from "./dtos/forgotPassword.dto";
 import { nanoid } from "nanoid";
 
 @Injectable()
