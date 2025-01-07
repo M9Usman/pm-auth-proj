@@ -6,7 +6,7 @@ import { AuthGuard } from './auth/guards/auth.guard';
 export class AppController {
   constructor(private readonly appService: AppService) {}
 
-  @Get('/notGuard')
+  @Get('/')
   getHello(): string {
     return this.appService.getHello();
   }
