@@ -31,7 +31,7 @@ export class AuthController{
         return await this.authService.login(userData);
     }
 
-    @Post('/verifyOTP/:id')
+    @Post('/verify-otp/:id')
     async verifyOTP(@Param() params:VerificationOTPDto,@Body() otp_message:OtpDto){
         const {id} = params;
         const {otp}= otp_message;
