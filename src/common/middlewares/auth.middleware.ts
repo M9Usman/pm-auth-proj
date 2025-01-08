@@ -11,8 +11,8 @@ export class AuthMiddleware implements NestMiddleware {
       '/auth/login',
       '/auth/forgot-password',
       '/auth/reset-password',
-      '/auth/resend-otp/:id',
-      '/auth/verify-otp/:id',
+      '/auth/resend-otp',
+      '/auth/verify-otp',
       '/',
     ];
 
