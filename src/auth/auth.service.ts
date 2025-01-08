@@ -144,11 +144,10 @@ export class AuthService{
         return { message: 'OTP sent successfully', email: user.email };
     }
     
-    async verifyOtp(userId: number, otp: string): Promise<boolean> {
-        // Fetch the OTP record for the user
+    async verifyOtp(email: string, otp: string): Promise<boolean> {
         const verificationOtp = await this.prisma.verificationOtp.findFirst({
             where: {
-                userId: +userId,
+                email,
                 expiresAt: { gte: new Date() }, // Ensure OTP is not expired
             },
         });
@@ -157,34 +156,34 @@ export class AuthService{
             throw new BadRequestException('Invalid or expired OTP.');
         }
     
-        // Compare the provided OTP with the hashed OTP in the database
         const isOtpValid = await bcrypt.compare(otp, verificationOtp.otp);
     
         if (!isOtpValid) {
             throw new BadRequestException('Invalid OTP.');
         }
     
-        try{
-                    // Mark user as verified
-                    await this.prisma.user.update({
-                        where: { id: +userId },
-                        data: { verified: true },
-                    });
-
-        }catch(e){
-            console.log('Error in User Update Verification : ',e);
+        try {
+            // Mark user as verified
+            await this.prisma.user.update({
+                where: { email },
+                data: { verified: true },
+            });
+        } catch (error) {
+            console.error('Error in User Update Verification:', error);
             throw new InternalServerErrorException('Error while updating user status.');
         }
+    
         // Delete the OTP after successful verification
         try {
             await this.prisma.verificationOtp.delete({
                 where: { id: verificationOtp.id },
             });
-            return true; // OTP verification was successful, and the record was deleted
+            return true;
         } catch (error) {
             throw new InternalServerErrorException('Error deleting OTP record after verification.');
         }
     }
+    
     
 
     async deleteExpiredOtps(): Promise<{ count: number }> {
@@ -201,19 +200,19 @@ export class AuthService{
         }
     }    
     
-    async resendOtp(userId: number) {
+    async resendOtp(email: string) {
         const user = await this.prisma.user.findUnique({
-            where: { id: +userId },
+            where: { email },
             select: { email: true, id: true },
         });
     
-        if (!user || !user.email) {
-            throw new NotFoundException('User not found or email is missing.');
+        if (!user) {
+            throw new NotFoundException('User not found.');
         }
-        
+    
         const existingOtp = await this.prisma.verificationOtp.findFirst({
             where: {
-                userId: user.id,
+                email: user.email,
                 expiresAt: { gte: new Date() }, // Check if OTP is still valid
             },
         });
@@ -257,7 +256,7 @@ export class AuthService{
         );
     
         return { message: 'OTP sent successfully', email: user.email };
-    }
+    }    
     
 
     async changePassword(userId:number,oldPassword:string,newPassword:string){

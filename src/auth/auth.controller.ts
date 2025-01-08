@@ -10,6 +10,8 @@ import { AuthGuard } from "src/auth/guards/auth.guard";
 import { ForgotPasswordDto } from "./dtos/forgotPassword.dto";
 import { ResetPasswordDto } from "./dtos/resetPassword.dto";
 import { Request } from "express";
+import { ResendOtpDto } from "./dtos/resendOTP.dto";
+import { VerifyOtpDto } from "./dtos/verifyOtp.dto";
 
 
 @Controller('/auth')
@@ -31,17 +33,16 @@ export class AuthController{
         return await this.authService.login(userData);
     }
 
-    @Post('/verify-otp/:id')
-    async verifyOTP(@Param() params:VerificationOTPDto,@Body() otp_message:OtpDto){
-        const {id} = params;
-        const {otp}= otp_message;
-        return await this.authService.verifyOtp(id,otp);
-        
+    @Post('verify-otp')
+    async verifyOtp(@Body() body: VerifyOtpDto) {
+        const { email, otp } = body;
+        return await this.authService.verifyOtp(email, otp);
     }
 
-    @Post('resend-otp/:userId')
-    async resendOtp(@Param('userId') userId: number) {
-        return this.authService.resendOtp(userId);
+    @Post('resend-otp')
+    async resendOtp(@Body() body: ResendOtpDto) {
+        const { email } = body;
+        return this.authService.resendOtp(email);
     }
 
     @UseGuards(AuthGuard)
