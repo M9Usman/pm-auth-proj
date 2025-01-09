@@ -9,6 +9,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { AuthMiddleware } from './common/middlewares/auth.middleware';
 import { PrismaService } from './prisma.service';
 import { AuthGuard } from './auth/guards/auth.guard';
+import { ChatModule } from './chat/chat.module';
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { AuthGuard } from './auth/guards/auth.guard';
         global:true,
         inject:[ConfigService]
       }),
+    ChatModule,
     ],
   controllers: [AppController],
   providers: [AppService,PrismaService,AuthGuard],
