@@ -14,14 +14,16 @@ datasource db {
 }
 
 model User {
-  id                Int               @id @default(autoincrement())
-  name              String
-  email             String            @unique
-  password          String
-  verified          Boolean           @default(false) // New column for verification status
-  verificationOtps  VerificationOtp[]
-  resetPassword     ResetPassword[]
+  id               Int               @id @default(autoincrement())
+  name             String
+  email            String            @unique
+  verified         Boolean           @default(false)
+  verificationOtps VerificationOtp[]
+  chats            Chat[]            @relation("UserChats")  // Implicit many-to-many
+  messages         Message[]         @relation("UserMessages")
 }
+
+
 
 model VerificationOtp {
   id         Int      @id @default(autoincrement())
@@ -38,10 +40,26 @@ model VerificationOtp {
   @@unique([otp, userId])
 }
 
-model ResetPassword {
-  id        Int      @id @default(autoincrement())
-  token     String   @unique
-  expiresAt DateTime
-  userId    Int
-  user      User     @relation(fields: [userId], references: [id])
+
+model Chat {
+  id           Int       @id @default(autoincrement())
+  participants User[]    @relation("UserChats") // Implicit many-to-many
+  messages     Message[]
+  type         String    // "one-to-one" or "group"
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+}
+
+
+model Message {
+  id         Int      @id @default(autoincrement())
+  content    String
+  chatId     Int
+  chat       Chat     @relation(fields: [chatId], references: [id])
+  senderId   Int
+  sender     User     @relation("UserMessages", fields: [senderId], references: [id])
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([chatId], name: "chat_idx")
 }
