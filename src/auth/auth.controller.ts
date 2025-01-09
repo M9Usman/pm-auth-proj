@@ -42,6 +42,7 @@ export class AuthController{
         const { count } = await this.authService.deleteExpiredOtps();
         console.log(`Cleaned up ${count} expired OTPs.`);
     }
+    @UseGuards(AuthGuard)
     @Get('/user-data')
     async authHome(@Req() req:Request){
         const user = req.user;

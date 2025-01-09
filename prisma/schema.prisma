@@ -58,6 +58,7 @@ model Message {
   chat       Chat     @relation(fields: [chatId], references: [id])
   senderId   Int
   sender     User     @relation("UserMessages", fields: [senderId], references: [id])
+  receiverId  Int     // The ID of the message recipient
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 

@@ -27,7 +27,9 @@ export class AuthService{
         if(user){
                 // Generate OTP
                 await this.generateVerificationOtp(user.id);
-
+                return {
+                    message: 'Check email for OTP Verification!',
+                };
         }
         else{
             try {
@@ -40,7 +42,7 @@ export class AuthService{
                 });
         
                 // Generate OTP
-                await this.generateVerificationOtp(newuser.id);
+               await this.generateVerificationOtp(newuser.id);
         
                 return {
                     message: 'User created successfully. Please verify your email. Check email for OTP Verification!',
