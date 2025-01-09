@@ -1,48 +1,39 @@
-import { CreateMessageDto } from './dto/create-message.dto';
-import { PrismaService } from 'src/prisma.service';
-import { WebSocketGateway, WebSocketServer, SubscribeMessage, MessageBody, ConnectedSocket } from '@nestjs/websockets';
+import {
+  WebSocketGateway,
+  WebSocketServer,
+  SubscribeMessage,
+  MessageBody,
+  ConnectedSocket,
+} from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
+import { ChatService } from './chat.service';
+import { CreateMessageDto } from './dto/create-message.dto';
 
-@WebSocketGateway({ cors: true })
+@WebSocketGateway({ cors: { origin: '*' } })
 export class ChatGateway {
   @WebSocketServer()
   server: Server;
 
-  constructor(private prisma: PrismaService) {}
+  constructor(private chatService: ChatService) {}
+
+  @SubscribeMessage('handleConnection')
+  async handleConnection(client: Socket) {
+    const userId = client.handshake.query.userId as string;
+    if (userId) {
+      console.log(`User joined room: user_${userId}`);
+      client.join(`user_${userId}`);
+    }
+  }
 
   @SubscribeMessage('sendMessage')
-  async handleMessage(
-    @MessageBody() createMessageDto: CreateMessageDto,
-    @ConnectedSocket() client: Socket,
-  ) {
+  async handleMessage(client: Socket, createMessageDto: CreateMessageDto) {
     try {
-      // Check if chatId exists and is valid
-      const chat = await this.prisma.chat.findUnique({
-        where: { id: createMessageDto.chatId },
-      });
+      const message = await this.chatService.sendMessage(createMessageDto, this.server);
 
-      if (!chat) {
-        throw new Error('Chat not found');
-      }
-
-      // Create message with sender and optionally receiver
-      const message = await this.prisma.message.create({
-        data: {
-          content: createMessageDto.content,
-          senderId: createMessageDto.senderId,
-          chatId: createMessageDto.chatId,
-          receiverId: createMessageDto.receiverId,
-        },
-        include: {
-          sender: true,
-          receiver: true,  // Include the receiver in the result if provided
-          chat: true,
-        },
-      });
-
-      this.server.emit('message', message);
+      // Emit confirmation or message to client
+      client.emit('messageSent', message);
     } catch (error) {
-      console.error('Error handling message:', error);
+      client.emit('messageError', { error: error.message });
     }
   }
 }

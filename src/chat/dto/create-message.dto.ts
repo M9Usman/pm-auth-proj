@@ -1,17 +1,17 @@
-import { IsString, IsInt, IsOptional, IsNotEmpty } from 'class-validator';
+    import { IsString, IsInt, IsOptional, IsNotEmpty } from 'class-validator';
 
-export class CreateMessageDto {
-  @IsString()
-  content: string;
+    export class CreateMessageDto {
+    @IsString()
+    content: string;
 
-  @IsInt()
-  chatId: number;
+    @IsInt()
+    chatId: number;
 
-  @IsInt()
-  @IsNotEmpty()
-  senderId: number;
+    @IsInt()
+    @IsNotEmpty()
+    senderId: number;
 
-  @IsInt()
-  @IsOptional()  // Marks receiverId as optional
-  receiverId?: number | null;
-}
+    @IsInt()
+    @IsOptional()  // Marks receiverId as optional
+    receiverId?: number | null;
+    }
